@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import Icon from '@/components/ui/icon';
+import { useGame } from '@/lib/gameContext';
 
 type ExerciseType = 'translate' | 'fill' | 'order' | 'match' | 'guess' | 'listen' | 'picture' | 'spelling';
 
@@ -383,6 +384,7 @@ function ListenExercise({ word, options, correct, onResult }: { word: string; op
 }
 
 export default function ExercisePage({ onBack }: { onBack: () => void }) {
+  const { addXP, addCoins, player } = useGame();
   const [currentEx, setCurrentEx] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
   const [wordOrder, setWordOrder] = useState<string[]>([]);
@@ -390,13 +392,18 @@ export default function ExercisePage({ onBack }: { onBack: () => void }) {
   const [correct, setCorrect] = useState(0);
   const [finished, setFinished] = useState(false);
   const [feedback, setFeedback] = useState<'correct' | 'wrong' | null>(null);
+  const rewardGiven = useRef(false);
 
   const ex = EXERCISES[currentEx];
   const progress = (currentEx / EXERCISES.length) * 100;
 
   function showFeedback(ok: boolean) {
     setFeedback(ok ? 'correct' : 'wrong');
-    if (ok) setCorrect(c => c + 1);
+    if (ok) {
+      setCorrect(c => c + 1);
+      addXP(25);
+      addCoins(5);
+    }
     setAnswered(true);
   }
 
@@ -428,6 +435,8 @@ export default function ExercisePage({ onBack }: { onBack: () => void }) {
 
   if (finished) {
     const stars = correct >= EXERCISES.length ? 3 : correct >= Math.ceil(EXERCISES.length * 0.6) ? 2 : 1;
+    const earnedXP = correct * 25;
+    const earnedCoins = correct * 5;
     return (
       <div className="p-4 flex flex-col items-center justify-center min-h-[calc(100vh-160px)] space-y-4 animate-scale-in">
         <div className="pixel-box-gold p-8 text-center space-y-4 w-full">
@@ -439,7 +448,17 @@ export default function ExercisePage({ onBack }: { onBack: () => void }) {
             ))}
           </div>
           <p className="font-rubik text-white">Правильно: {correct}/{EXERCISES.length}</p>
-          <p className="font-pixel text-[8px] text-retro-gold">+{correct * 25} XP получено!</p>
+          <div className="flex gap-4 justify-center">
+            <div className="pixel-box px-3 py-2 text-center">
+              <p className="font-pixel text-[10px] text-retro-gold">+{earnedXP}</p>
+              <p className="font-pixel text-[7px] text-retro-border">XP</p>
+            </div>
+            <div className="pixel-box px-3 py-2 text-center">
+              <p className="font-pixel text-[10px] text-retro-gold">+{earnedCoins}</p>
+              <p className="font-pixel text-[7px] text-retro-border">🪙</p>
+            </div>
+          </div>
+          <p className="font-pixel text-[8px] text-retro-cyan">Монет в кошельке: {player.coins} 🪙</p>
         </div>
         <button className="btn-gold w-full" onClick={onBack}>← ВЕРНУТЬСЯ К УРОВНЯМ</button>
         <button
@@ -447,6 +466,7 @@ export default function ExercisePage({ onBack }: { onBack: () => void }) {
           onClick={() => {
             setCurrentEx(0); setCorrect(0); setFinished(false);
             setAnswered(false); setSelected(null); setFeedback(null); setWordOrder([]);
+            rewardGiven.current = false;
           }}
         >
           🔄 ПОВТОРИТЬ

@@ -1,52 +1,57 @@
-import { useState } from 'react';
+import { useGame, FRAME_COLORS } from '@/lib/gameContext';
 
 const AVATARS = ['⚔️', '🧙', '🏹', '🛡️', '🦊', '🐺', '🦁', '🐯', '🧝', '🧛', '🐉', '🦄'];
-const HATS = ['🎩', '👑', '⛑️', '🪖', '🎓', '🧢', '🎭', '❌'];
-const WEAPONS = ['⚔️', '🪄', '📚', '🖊️', '🔮', '🎸', '❌'];
-const PETS = ['🦊', '🐱', '🐶', '🦜', '🐍', '🐉', '❌'];
 
-const COLORS = [
-  { name: 'Золото', value: '#ffd700', cls: 'border-retro-gold' },
-  { name: 'Киан', value: '#00ffff', cls: 'border-retro-cyan' },
-  { name: 'Розовый', value: '#ff69b4', cls: 'border-retro-pink' },
-  { name: 'Зелёный', value: '#39ff14', cls: 'border-retro-green' },
-  { name: 'Фиолет', value: '#bf5fff', cls: 'border-retro-purple' },
-  { name: 'Оранжевый', value: '#ff8c00', cls: 'border-retro-orange' },
-];
+interface CustomizePageProps {
+  onNavigate: (page: string) => void;
+}
 
-const TITLES = ['Искатель слов', 'Знаток Парижа', 'Языковой рыцарь', 'Мастер диалогов', 'Гуру фразеологии'];
+export default function CustomizePage({ onNavigate }: CustomizePageProps) {
+  const { player, equipItem, setAvatar } = useGame();
 
-export default function CustomizePage() {
-  const [avatar, setAvatar] = useState(0);
-  const [hat, setHat] = useState(0);
-  const [weapon, setWeapon] = useState(0);
-  const [pet, setPet] = useState(0);
-  const [color, setColor] = useState(0);
-  const [title, setTitle] = useState(0);
+  const frameColor = FRAME_COLORS[player.equippedFrame] ?? '#ffd700';
 
-  const selectedColor = COLORS[color].value;
+  const ownedHats = player.shop.filter(i => i.type === 'hat' && i.owned);
+  const ownedWeapons = player.shop.filter(i => i.type === 'weapon' && i.owned);
+  const ownedPets = player.shop.filter(i => i.type === 'pet' && i.owned);
+  const ownedFrames = player.shop.filter(i => i.type === 'frame' && i.owned);
+
+  const hat = player.equippedHat ? player.shop.find(i => i.id === player.equippedHat) : null;
+  const weapon = player.equippedWeapon ? player.shop.find(i => i.id === player.equippedWeapon) : null;
+  const pet = player.equippedPet ? player.shop.find(i => i.id === player.equippedPet) : null;
+
+  function unequip(type: 'hat' | 'weapon' | 'pet') {
+    // We can't unequip in current system without adding state — just navigate to shop
+  }
 
   return (
     <div className="p-4 space-y-4 animate-fade-in">
       {/* Preview */}
-      <div className="pixel-box p-4 flex flex-col items-center gap-3">
-        <p className="font-pixel text-[9px] text-retro-gold">ПРЕДПРОСМОТР</p>
-        <div
-          className="w-24 h-24 border-4 flex items-center justify-center text-5xl relative"
-          style={{ borderColor: selectedColor, boxShadow: `0 0 20px ${selectedColor}66` }}
-        >
-          <span>{AVATARS[avatar]}</span>
-          {HATS[hat] !== '❌' && <span className="absolute -top-3 text-2xl">{HATS[hat]}</span>}
-          {PETS[pet] !== '❌' && <span className="absolute -right-3 bottom-0 text-xl">{PETS[pet]}</span>}
+      <div className="pixel-box p-6 flex flex-col items-center gap-3">
+        <p className="font-pixel text-[9px] text-retro-gold">ТВОЙ ПЕРСОНАЖ</p>
+        <div className="relative">
+          <div
+            className="w-28 h-28 border-4 flex items-center justify-center text-6xl relative"
+            style={{ borderColor: frameColor, boxShadow: `0 0 25px ${frameColor}55` }}
+          >
+            {AVATARS[player.avatar]}
+            {hat && <span className="absolute -top-4 text-3xl">{hat.emoji}</span>}
+            {pet && <span className="absolute -right-4 bottom-0 text-2xl">{pet.emoji}</span>}
+          </div>
         </div>
-        <p className="font-pixel text-[8px]" style={{ color: selectedColor }}>{TITLES[title]}</p>
-        <div className="flex items-center gap-2">
-          {WEAPONS[weapon] !== '❌' && <span className="text-xl">{WEAPONS[weapon]}</span>}
-          <div className="bg-retro-gold text-retro-bg font-pixel text-[8px] px-2 py-1">Lv.7</div>
+        <div className="flex items-center gap-3">
+          {weapon && <span className="text-2xl">{weapon.emoji}</span>}
+          <div className="text-center">
+            <p className="font-russo text-sm text-white">Искатель слов</p>
+            <div className="bg-retro-gold text-retro-bg font-pixel text-[8px] px-2 py-0.5 inline-block mt-0.5">
+              Lv.{player.level}
+            </div>
+          </div>
         </div>
+        <p className="font-pixel text-[8px] text-retro-gold">{player.coins} 🪙 в кошельке</p>
       </div>
 
-      {/* Avatar */}
+      {/* Avatar selection */}
       <div className="pixel-box p-3">
         <p className="font-pixel text-[8px] text-retro-gold mb-3">АВАТАР</p>
         <div className="grid grid-cols-6 gap-2">
@@ -55,7 +60,7 @@ export default function CustomizePage() {
               key={i}
               onClick={() => setAvatar(i)}
               className={`h-10 text-xl flex items-center justify-center border-2 transition-all
-                ${avatar === i ? 'border-retro-gold bg-retro-gold/10' : 'border-retro-border hover:border-retro-gold/50'}`}
+                ${player.avatar === i ? 'border-retro-gold bg-retro-gold/10' : 'border-retro-border hover:border-retro-gold/50'}`}
             >
               {a}
             </button>
@@ -63,91 +68,136 @@ export default function CustomizePage() {
         </div>
       </div>
 
-      {/* Hat */}
+      {/* Owned hats */}
       <div className="pixel-box p-3">
-        <p className="font-pixel text-[8px] text-retro-cyan mb-3">ГОЛОВНОЙ УБОР</p>
-        <div className="flex gap-2 overflow-x-auto pb-1">
-          {HATS.map((h, i) => (
-            <button
-              key={i}
-              onClick={() => setHat(i)}
-              className={`shrink-0 w-12 h-12 text-2xl flex items-center justify-center border-2 transition-all
-                ${hat === i ? 'border-retro-cyan bg-retro-cyan/10' : 'border-retro-border hover:border-retro-cyan/50'}`}
-            >
-              {h}
+        <div className="flex items-center justify-between mb-3">
+          <p className="font-pixel text-[8px] text-retro-cyan">🎩 ШЛЯПЫ</p>
+          {ownedHats.length === 0 && (
+            <button onClick={() => onNavigate('shop')} className="font-pixel text-[7px] text-retro-border hover:text-retro-gold">
+              Купить →
             </button>
-          ))}
+          )}
         </div>
-      </div>
-
-      {/* Weapon & Pet */}
-      <div className="grid grid-cols-2 gap-3">
-        <div className="pixel-box p-3">
-          <p className="font-pixel text-[7px] text-retro-pink mb-2">ОРУЖИЕ</p>
-          <div className="flex flex-wrap gap-1.5">
-            {WEAPONS.map((w, i) => (
+        {ownedHats.length === 0 ? (
+          <p className="font-rubik text-xs text-retro-border/60 text-center py-2">
+            Шляп пока нет. Купи в магазине!
+          </p>
+        ) : (
+          <div className="flex gap-2 flex-wrap">
+            <button
+              onClick={() => equipItem('')}
+              className={`w-12 h-12 border-2 flex items-center justify-center font-pixel text-[8px] transition-all
+                ${!player.equippedHat ? 'border-retro-gold bg-retro-gold/10 text-retro-gold' : 'border-retro-border text-retro-border'}`}
+            >
+              ✗
+            </button>
+            {ownedHats.map(item => (
               <button
-                key={i}
-                onClick={() => setWeapon(i)}
-                className={`w-9 h-9 text-lg flex items-center justify-center border-2 transition-all
-                  ${weapon === i ? 'border-retro-pink bg-retro-pink/10' : 'border-retro-border'}`}
+                key={item.id}
+                onClick={() => equipItem(item.id)}
+                className={`w-12 h-12 border-2 text-2xl flex items-center justify-center transition-all
+                  ${player.equippedHat === item.id ? 'border-retro-cyan bg-retro-cyan/10' : 'border-retro-border hover:border-retro-cyan/50'}`}
               >
-                {w}
+                {item.emoji}
               </button>
             ))}
           </div>
+        )}
+      </div>
+
+      {/* Owned weapons */}
+      <div className="pixel-box p-3">
+        <div className="flex items-center justify-between mb-3">
+          <p className="font-pixel text-[8px] text-retro-pink">⚔️ ОРУЖИЕ</p>
+          {ownedWeapons.length === 0 && (
+            <button onClick={() => onNavigate('shop')} className="font-pixel text-[7px] text-retro-border hover:text-retro-gold">
+              Купить →
+            </button>
+          )}
         </div>
-        <div className="pixel-box p-3">
-          <p className="font-pixel text-[7px] text-retro-green mb-2">ПИТОМЕЦ</p>
-          <div className="flex flex-wrap gap-1.5">
-            {PETS.map((p, i) => (
+        {ownedWeapons.length === 0 ? (
+          <p className="font-rubik text-xs text-retro-border/60 text-center py-2">Оружия пока нет.</p>
+        ) : (
+          <div className="flex gap-2 flex-wrap">
+            <button
+              onClick={() => equipItem('')}
+              className={`w-12 h-12 border-2 flex items-center justify-center font-pixel text-[8px] transition-all
+                ${!player.equippedWeapon ? 'border-retro-gold bg-retro-gold/10 text-retro-gold' : 'border-retro-border text-retro-border'}`}
+            >
+              ✗
+            </button>
+            {ownedWeapons.map(item => (
               <button
-                key={i}
-                onClick={() => setPet(i)}
-                className={`w-9 h-9 text-lg flex items-center justify-center border-2 transition-all
-                  ${pet === i ? 'border-retro-green bg-retro-green/10' : 'border-retro-border'}`}
+                key={item.id}
+                onClick={() => equipItem(item.id)}
+                className={`w-12 h-12 border-2 text-2xl flex items-center justify-center transition-all
+                  ${player.equippedWeapon === item.id ? 'border-retro-pink bg-retro-pink/10' : 'border-retro-border hover:border-retro-pink/50'}`}
               >
-                {p}
+                {item.emoji}
               </button>
             ))}
           </div>
-        </div>
+        )}
       </div>
 
-      {/* Color */}
+      {/* Owned pets */}
       <div className="pixel-box p-3">
-        <p className="font-pixel text-[8px] text-retro-gold mb-3">ЦВЕТ РАМКИ</p>
-        <div className="flex gap-2">
-          {COLORS.map((c, i) => (
-            <button
-              key={i}
-              onClick={() => setColor(i)}
-              className={`flex-1 h-8 border-4 transition-all ${c.cls} ${color === i ? 'scale-110' : 'opacity-60 hover:opacity-80'}`}
-              style={{ background: `${c.value}22` }}
-            />
-          ))}
-        </div>
-      </div>
-
-      {/* Title */}
-      <div className="pixel-box p-3">
-        <p className="font-pixel text-[8px] text-retro-gold mb-3">ТИТУЛ</p>
-        <div className="space-y-1.5">
-          {TITLES.map((t, i) => (
-            <button
-              key={i}
-              onClick={() => setTitle(i)}
-              className={`w-full text-left p-2 border-2 font-rubik text-sm transition-all
-                ${title === i ? 'border-retro-gold bg-retro-gold/10 text-retro-gold' : 'border-retro-border text-retro-border hover:border-retro-gold/50'}`}
-            >
-              {i < 2 ? '' : '🔒 '}{t}
+        <div className="flex items-center justify-between mb-3">
+          <p className="font-pixel text-[8px] text-retro-green">🐾 ПИТОМЦЫ</p>
+          {ownedPets.length === 0 && (
+            <button onClick={() => onNavigate('shop')} className="font-pixel text-[7px] text-retro-border hover:text-retro-gold">
+              Купить →
             </button>
-          ))}
+          )}
+        </div>
+        {ownedPets.length === 0 ? (
+          <p className="font-rubik text-xs text-retro-border/60 text-center py-2">Питомцев пока нет.</p>
+        ) : (
+          <div className="flex gap-2 flex-wrap">
+            <button
+              onClick={() => equipItem('')}
+              className={`w-12 h-12 border-2 flex items-center justify-center font-pixel text-[8px] transition-all
+                ${!player.equippedPet ? 'border-retro-gold bg-retro-gold/10 text-retro-gold' : 'border-retro-border text-retro-border'}`}
+            >
+              ✗
+            </button>
+            {ownedPets.map(item => (
+              <button
+                key={item.id}
+                onClick={() => equipItem(item.id)}
+                className={`w-12 h-12 border-2 text-2xl flex items-center justify-center transition-all
+                  ${player.equippedPet === item.id ? 'border-retro-green bg-retro-green/10' : 'border-retro-border hover:border-retro-green/50'}`}
+              >
+                {item.emoji}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Owned frames */}
+      <div className="pixel-box p-3">
+        <p className="font-pixel text-[8px] text-retro-gold mb-3">🖼️ РАМКА</p>
+        <div className="flex gap-2 flex-wrap">
+          {ownedFrames.map(item => {
+            const color = FRAME_COLORS[item.id] ?? '#ffd700';
+            return (
+              <button
+                key={item.id}
+                onClick={() => equipItem(item.id)}
+                className={`w-12 h-12 border-4 transition-all flex items-center justify-center
+                  ${player.equippedFrame === item.id ? 'scale-110' : 'opacity-60 hover:opacity-90'}`}
+                style={{ borderColor: color, background: `${color}22` }}
+              >
+                {player.equippedFrame === item.id && <span className="font-pixel text-[10px]" style={{ color }}>✓</span>}
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      <button className="btn-gold w-full text-center">
-        💾 СОХРАНИТЬ ПЕРСОНАЖА
+      <button onClick={() => onNavigate('shop')} className="btn-gold w-full">
+        🛍️ ПЕРЕЙТИ В МАГАЗИН
       </button>
     </div>
   );
